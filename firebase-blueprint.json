@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "activityLog": {
+      "title": "ActivityLog",
+      "description": "Represents a completed workout, run, or rest day logging with motivational rating",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "dayType": { "type": "string", "enum": ["gym", "run", "rest"] },
+        "focusName": { "type": "string" },
+        "completedExercises": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rating": { "type": "integer" },
+        "notes": { "type": "string" },
+        "syncedToCalendar": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "date", "dayType", "rating"]
+    },
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "Represents the user information connected to Google Account",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email"]
+    }
+  },
+  "firestore": {
+    "/activityLogs/{logId}": {
+      "schema": "activityLog",
+      "description": "User daily activity logs"
+    },
+    "/userProfiles/{profileId}": {
+      "schema": "userProfile",
+      "description": "User general profile settings synced with Google"
+    }
+  }
+}

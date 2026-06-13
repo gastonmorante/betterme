@@ -1,0 +1,8 @@
+{
+  "name": "StrongApp",
+  "description": "Aplicación personalizada de entrenamiento, guía nutricional a un año y coach personal de IA para Gastón.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
