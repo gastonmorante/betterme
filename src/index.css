@@ -62,3 +62,17 @@
   animation-play-state: paused;
 }
 
+/* Force hide Firebase Auth background iframes that render as white boxes on mobile */
+iframe,
+iframe[src*="firebaseapp.com"],
+iframe[id*="auth"] {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+}
+
