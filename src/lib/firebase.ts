@@ -2,6 +2,8 @@ import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   onAuthStateChanged, 
   User,
@@ -31,8 +33,8 @@ export const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/calendar');
 
-// Keep token in memory
-let cachedAccessToken: string | null = null;
+// Keep token in memory and sessionStorage
+let cachedAccessToken: string | null = sessionStorage.getItem('betterme_google_access_token');
 let isSigningIn = false;
 
 // Initialize auth session
@@ -40,6 +42,22 @@ export const initAuth = (
   onAuthSuccess: (user: User, token: string) => void,
   onAuthFailure: () => void
 ) => {
+  // Check redirect result for mobile logins
+  getRedirectResult(auth)
+    .then((result) => {
+      if (result) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          cachedAccessToken = credential.accessToken;
+          sessionStorage.setItem('betterme_google_access_token', credential.accessToken);
+          onAuthSuccess(result.user, cachedAccessToken);
+        }
+      }
+    })
+    .catch((error) => {
+      console.error('Error al obtener resultado de redirección Firebase Auth:', error);
+    });
+
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
       if (cachedAccessToken) {
@@ -60,14 +78,25 @@ export const initAuth = (
 export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
   try {
     isSigningIn = true;
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error('No se pudo obtener el token de acceso para Google Calendar.');
-    }
+    
+    // Check if it's a mobile device browser
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // Use redirect on mobile browsers to avoid popup blocking
+      await signInWithRedirect(auth, provider);
+      return null; // Will redirect away, returns null in the meantime
+    } else {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (!credential?.accessToken) {
+        throw new Error('No se pudo obtener el token de acceso para Google Calendar.');
+      }
 
-    cachedAccessToken = credential.accessToken;
-    return { user: result.user, accessToken: cachedAccessToken };
+      cachedAccessToken = credential.accessToken;
+      sessionStorage.setItem('betterme_google_access_token', credential.accessToken);
+      return { user: result.user, accessToken: cachedAccessToken };
+    }
   } catch (error: any) {
     console.error('Error de autenticación Google:', error);
     throw error;
@@ -255,4 +284,5 @@ export const deleteActivityLogDb = async (id: string): Promise<void> => {
 export const userLogout = async () => {
   await signOut(auth);
   cachedAccessToken = null;
+  sessionStorage.removeItem('betterme_google_access_token');
 };
